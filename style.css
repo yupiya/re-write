@@ -5,13 +5,13 @@
 
 body {
   margin: 0;
-  background: #f6f6f6;
+  background: #f4f4f4;
   color: #111;
 }
 
 header {
-  padding: 20px;
   text-align: center;
+  padding: 24px 16px 8px;
 }
 
 header h1 {
@@ -19,25 +19,29 @@ header h1 {
   font-weight: 600;
 }
 
-header span {
-  font-size: 14px;
+header p {
+  margin: 6px 0 0;
   color: #666;
+  font-size: 14px;
 }
 
 .toolbar {
   display: flex;
-  gap: 10px;
-  padding: 10px;
-  justify-content: center;
+  gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
+  padding: 12px;
 }
 
-.toolbar button, select {
+.toolbar button,
+.toolbar select,
+.toolbar input {
   padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid #ddd;
   background: white;
   cursor: pointer;
+  font-size: 13px;
 }
 
 main {
@@ -48,6 +52,7 @@ main {
 
 canvas {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.08);
+  touch-action: none;
 }
