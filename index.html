@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Handwritten Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <h1>Handwritten.</h1>
+  <span>Write slowly. Think clearly.</span>
+</header>
+
+<div class="toolbar">
+  <select id="brush">
+    <option value="pen">Pen</option>
+    <option value="marker">Marker</option>
+    <option value="pencil">Pencil</option>
+  </select>
+
+  <input type="color" id="color" value="#111111" />
+  <input type="range" id="size" min="1" max="20" value="3" />
+
+  <select id="canvasStyle">
+    <option value="plain">Plain</option>
+    <option value="lined">Lined Notebook</option>
+    <option value="grid">Grid</option>
+  </select>
+
+  <button onclick="undo()">Undo</button>
+  <button onclick="redo()">Redo</button>
+  <button onclick="saveImage('png')">PNG</button>
+  <button onclick="saveImage('jpg')">JPG</button>
+</div>
+
+<main>
+  <canvas id="canvas"></canvas>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
