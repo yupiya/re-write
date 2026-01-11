@@ -103,5 +103,34 @@ function drawBackground(type) {
   }
 }
 
+function optimizeHandwriting() {
+  const text = prompt(
+    "Optimize handwriting\n\nKetik ulang isi tulisan agar lebih rapi:",
+    ""
+  );
+
+  if (!text) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground(document.getElementById("canvasStyle").value);
+
+  ctx.fillStyle = color;
+  ctx.font = "24px 'Patrick Hand'";
+  ctx.textBaseline = "top";
+
+  const margin = 40;
+  const lineHeight = 36;
+  let x = margin;
+  let y = margin;
+
+  text.split("\n").forEach(line => {
+    ctx.fillText(line, x, y);
+    y += lineHeight;
+  });
+
+  saveState();
+}
+
+
 // init
 drawBackground("plain");
