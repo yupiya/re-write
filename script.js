@@ -4,66 +4,157 @@ const ctx = canvas.getContext("2d");
 canvas.width = 900;
 canvas.height = 600;
 
+// State
 let drawing = false;
+let strokes = [];
+let currentStroke = [];
 let history = [];
 let redoStack = [];
 
+// Tool state
 let brushType = "pen";
 let color = "#111";
 let size = 3;
 
+// UI bindings
 document.getElementById("brush").onchange = e => brushType = e.target.value;
 document.getElementById("color").onchange = e => color = e.target.value;
 document.getElementById("size").oninput = e => size = e.target.value;
-document.getElementById("canvasStyle").onchange = e => drawBackground(e.target.value);
+document.getElementById("canvasStyle").onchange = e => redrawAll(e.target.value);
 
-function saveState() {
-  history.push(canvas.toDataURL());
-  redoStack = [];
-}
-
+// -------------------------
+// Drawing logic
+// -------------------------
 canvas.addEventListener("pointerdown", e => {
   drawing = true;
-  ctx.beginPath();
-  ctx.moveTo(e.offsetX, e.offsetY);
+  currentStroke = [];
   saveState();
+
+  currentStroke.push(createPoint(e));
 });
 
 canvas.addEventListener("pointermove", e => {
   if (!drawing) return;
 
-  ctx.lineWidth = size;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = color;
-
-  if (brushType === "marker") ctx.globalAlpha = 0.3;
-  else if (brushType === "pencil") ctx.globalAlpha = 0.6;
-  else ctx.globalAlpha = 1;
-
-  ctx.lineTo(e.offsetX, e.offsetY);
-  ctx.stroke();
+  currentStroke.push(createPoint(e));
+  redrawTemp();
 });
 
 canvas.addEventListener("pointerup", () => {
+  if (currentStroke.length > 0) {
+    strokes.push(currentStroke);
+  }
   drawing = false;
-  ctx.globalAlpha = 1;
 });
+
+function createPoint(e) {
+  return {
+    x: e.offsetX,
+    y: e.offsetY,
+    color,
+    size,
+    brushType
+  };
+}
+
+// -------------------------
+// Rendering
+// -------------------------
+function redrawTemp() {
+  redrawAll(document.getElementById("canvasStyle").value);
+  drawStroke(currentStroke);
+}
+
+function redrawAll(style) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground(style);
+
+  strokes.forEach(stroke => drawStroke(stroke));
+}
+
+function drawStroke(stroke) {
+  if (stroke.length < 2) return;
+
+  ctx.beginPath();
+  ctx.moveTo(stroke[0].x, stroke[0].y);
+
+  for (let i = 1; i < stroke.length; i++) {
+    ctx.lineTo(stroke[i].x, stroke[i].y);
+  }
+
+  ctx.strokeStyle = stroke[0].color;
+  ctx.lineWidth = stroke[0].size;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (stroke[0].brushType === "marker") ctx.globalAlpha = 0.3;
+  else if (stroke[0].brushType === "pencil") ctx.globalAlpha = 0.6;
+  else ctx.globalAlpha = 1;
+
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// -------------------------
+// Optimize handwriting
+// -------------------------
+function optimizeHandwriting() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground(document.getElementById("canvasStyle").value);
+
+  strokes.forEach(stroke => smoothStroke(stroke));
+}
+
+function smoothStroke(stroke) {
+  if (stroke.length < 3) {
+    drawStroke(stroke);
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(stroke[0].x, stroke[0].y);
+
+  for (let i = 1; i < stroke.length - 2; i++) {
+    const xc = (stroke[i].x + stroke[i + 1].x) / 2;
+    const yc = (stroke[i].y + stroke[i + 1].y) / 2;
+    ctx.quadraticCurveTo(stroke[i].x, stroke[i].y, xc, yc);
+  }
+
+  const last = stroke[stroke.length - 1];
+  ctx.lineTo(last.x, last.y);
+
+  ctx.strokeStyle = stroke[0].color;
+  ctx.lineWidth = stroke[0].size * 0.9;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+}
+
+// -------------------------
+// Undo / Redo
+// -------------------------
+function saveState() {
+  history.push(JSON.stringify(strokes));
+  redoStack = [];
+}
 
 function undo() {
   if (!history.length) return;
-  redoStack.push(canvas.toDataURL());
-  const img = new Image();
-  img.src = history.pop();
-  img.onload = () => ctx.drawImage(img, 0, 0);
+  redoStack.push(JSON.stringify(strokes));
+  strokes = JSON.parse(history.pop());
+  redrawAll(document.getElementById("canvasStyle").value);
 }
 
 function redo() {
   if (!redoStack.length) return;
-  const img = new Image();
-  img.src = redoStack.pop();
-  img.onload = () => ctx.drawImage(img, 0, 0);
+  history.push(JSON.stringify(strokes));
+  strokes = JSON.parse(redoStack.pop());
+  redrawAll(document.getElementById("canvasStyle").value);
 }
 
+// -------------------------
+// Export
+// -------------------------
 function saveImage(type) {
   const link = document.createElement("a");
   link.download = `handwritten.${type}`;
@@ -71,8 +162,10 @@ function saveImage(type) {
   link.click();
 }
 
+// -------------------------
+// Backgrounds
+// -------------------------
 function drawBackground(type) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -103,34 +196,5 @@ function drawBackground(type) {
   }
 }
 
-function optimizeHandwriting() {
-  const text = prompt(
-    "Optimize handwriting\n\nKetik ulang isi tulisan agar lebih rapi:",
-    ""
-  );
-
-  if (!text) return;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBackground(document.getElementById("canvasStyle").value);
-
-  ctx.fillStyle = color;
-  ctx.font = "24px 'Patrick Hand'";
-  ctx.textBaseline = "top";
-
-  const margin = 40;
-  const lineHeight = 36;
-  let x = margin;
-  let y = margin;
-
-  text.split("\n").forEach(line => {
-    ctx.fillText(line, x, y);
-    y += lineHeight;
-  });
-
-  saveState();
-}
-
-
-// init
+// Init
 drawBackground("plain");
